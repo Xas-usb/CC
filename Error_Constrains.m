@@ -16,7 +16,7 @@ function [sys,x0,str,ts] = mdlInitializeSizes
     sizes.NumContStates  = 0;
     sizes.NumDiscStates  = 0;
     sizes.NumOutputs     = 6;  % sig1, sig2, th1, th2, th1_dot, th2_dot
-    sizes.NumInputs      = 2;  % E, phi_e
+    sizes.NumInputs      = 5;  % E, phi_e
     sizes.DirFeedthrough = 1;
     sizes.NumSampleTimes = 1;
     sys = simsizes(sizes);
@@ -38,15 +38,14 @@ function sys = mdlOutputs(t,x,u_in)
     k2 = 10; l2 = 300;
 
     %% --- 1. 性能函数 theta_i (式2-26) ---
-    % t >= Tf 时保持在 th_inf，避免 (Tf-t) 除零
-    if t < Tf - 1e-8  % 留安全余量，避免 Tf-t → 0 的数值问题
-        exp_term = exp(1 - Tf/(Tf - t));
+    if t < Tf  
+        exp_term = exp(1-Tf/(Tf-t));
         theta1 = (th10 - th1_inf) * exp_term + th1_inf;
         theta2 = (th20 - th2_inf) * exp_term + th2_inf;
 
         % theta 导数 (需要传递到虚拟控制律)
-        theta1_dot = -((th10 - th1_inf) * Tf / ((Tf - t)^2 + 1e-10)) * exp_term;
-        theta2_dot = -((th20 - th2_inf) * Tf / ((Tf - t)^2 + 1e-10)) * exp_term;
+        theta1_dot = -((th10 - th1_inf) * Tf / ((Tf - t)^2 )) * exp_term;
+        theta2_dot = -((th20 - th2_inf) * Tf / ((Tf - t)^2 )) * exp_term;
     else
         % t >= Tf: 保持在稳态值
         theta1 = th1_inf;
@@ -56,9 +55,9 @@ function sys = mdlOutputs(t,x,u_in)
     end
 
     %% --- 2. 误差转换 sigma_i (式2-29) ---
-    % 安全处理：E 或 phi_e 极大时，sigma 饱和到 ±k
-    sigma1 = (k1 * E) / sqrt(E^2 + l1 + 1e-30);  % 加极小量防除零
-    sigma2 = (k2 * phi_e) / sqrt(phi_e^2 + l2 + 1e-30);
+   
+    sigma1 = (k1*E)/sqrt(E^2+l1 );  
+    sigma2 = (k2*phi_e)/sqrt(phi_e^2+l2);
 
     sys = [sigma1; sigma2; theta1; theta2; theta1_dot; theta2_dot];
 end

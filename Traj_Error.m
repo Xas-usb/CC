@@ -15,8 +15,8 @@ function [sys,x0,str,ts] = mdlInitializeSizes
     sizes = simsizes;
     sizes.NumContStates  = 0;
     sizes.NumDiscStates  = 0;
-    sizes.NumOutputs     = 2;  % E, phi_e
-    sizes.NumInputs      = 12; % 期望轨迹6 + 实际状态6
+    sizes.NumOutputs     = 5;  
+    sizes.NumInputs      = 14; 
     sizes.DirFeedthrough = 1;
     sizes.NumSampleTimes = 1;
     sys = simsizes(sizes);
@@ -30,8 +30,8 @@ function sys = mdlOutputs(t,x,u_in)
     x_d    = u_in(1);
     y_d    = u_in(2);
     phi_d  = u_in(3);  
-    xd_dot = u_in(4);  
-    yd_dot = u_in(5);  
+    dxd = u_in(4);  
+    dyd = u_in(5);  
     phid_dot = u_in(6); 
 
     % 输入解包：实际状态 (7-12, 来自Transform)
@@ -40,22 +40,40 @@ function sys = mdlOutputs(t,x,u_in)
     phi= u_in(9);  
     u_real  = u_in(10);
     v_bar   = u_in(11); 
-    r_real  = u_in(12); 
+    r  = u_in(12); 
+    dx1 = u_in(13);
+    dy = u_in(14);
 
     % 大地坐标系下的位置误差 (式2-17)
-    xe_bar = x_d - x_bar;
-    ye_bar = y_d - y_bar;
+    xe_bar = x_d-x_bar;
+    ye_bar = y_d-y_bar;
 
     % 船体坐标系下的位置误差 (式2-18)
     xe_tilde =  cos(phi)*xe_bar + sin(phi)*ye_bar;
-    ye_tidle = -sin(phi)*xe_bar + cos(phi)*ye_bar;
+    ye_tilde = -sin(phi)*xe_bar + cos(phi)*ye_bar;
+ %% 坐标变换求导
+    m22 = 33.8;
+    m23 = 1.0948;
+    hbar = m23 / m22;
+    dphi = r;
+    phi_e = atan2(ye_tilde,xe_tilde);
+    dx_bar=dx1-hbar*sin(phi)*dphi;
+    dy_bar=dy+hbar*cos(phi)*dphi;
+
+    dxe_bar=dxd-dx_bar;
+    dye_bar=dyd-dy_bar;
+
+    dxe_tilde=-sin(phi)*dphi*xe_bar+cos(phi)*dxe_bar+cos(phi)*dphi*ye_bar+sin(phi)*dye_bar;
+    dye_tilde=-cos(phi)*dphi*xe_bar-sin(phi)*dxe_bar-sin(phi)*dphi*ye_bar+cos(phi)*dye_bar;
+
+    dphie=(dye_tilde*xe_tilde-ye_tilde*dxe_tilde)/(xe_tilde^2+ye_tilde^2);
+
+    phid=phi+phi_e;
+    dphid=dphi+dphie;
+
 
     %% 综合位置误差 E (标量)
     E = sqrt(xe_bar^2 + ye_bar^2);
-
-    %% 角度误差 phi_e — 统一使用 atan2，规避 x_e=0 分支缺陷
-    phi_e = atan2(ye_tidle, xe_tilde);              % 范围 (-pi, pi]
-    phi_e = mod(phi_e + pi, 2*pi) - pi;   % 规约到 [-pi, pi)，避免 x_e 过零跳变
-
-    sys = [E; phi_e];
+     
+    sys = [E; phi_e;phid;dphid;v_bar];
 end

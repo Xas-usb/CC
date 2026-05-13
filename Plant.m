@@ -17,12 +17,12 @@ function [sys,x0,str,ts] = mdlInitializeSizes
     sizes = simsizes;
     sizes.NumContStates  = 6;  % x, y, phi, u, v, r
     sizes.NumDiscStates  = 0;
-    sizes.NumOutputs     = 6;  % 同上
-    sizes.NumInputs      = 5;  % tau_fu, tau_fr, tau_Du, tau_Dv, tau_Dr
+    sizes.NumOutputs     = 8;  
+    sizes.NumInputs      = 2;  % tau_fu, tau_fr
     sizes.DirFeedthrough = 0;
     sizes.NumSampleTimes = 1;
     sys = simsizes(sizes);
-    x0  = [-5; -5; 0; 0; 0; 0];  % 初始位置 (x,y)=(-20,10), 航向角0, 速度0
+    x0  = [-15; -5; 0; 0; 0; 0];  % 初始位置 (x,y)=(-20,10), 航向角0, 速度0
     str = [];
     ts  = [0 0];
 end
@@ -33,7 +33,6 @@ function sys = mdlDerivatives(t,x,u_in)
     phi   = x(3); u     = x(4); v = x(5); r = x(6);
 
     tau_fu = u_in(1); tau_fr = u_in(2);
-    tau_Du = u_in(3); tau_Dv = u_in(4); tau_Dr = u_in(5);
 
     % 模型参数 (表2-1)
     m11 = 25.8; m22 = 33.8; m23 = 1.0948;
@@ -42,7 +41,7 @@ function sys = mdlDerivatives(t,x,u_in)
     % 水动力阻尼 (速度相关)
     d11 = 5.8664*u^2 + 1.3274*abs(u) + 0.7225;
     d22 = 0.805*abs(r) + 36.2823*abs(v) + 0.8612;
-    d23 = abs(r) + 0.845*abs(v) - 0.1079;
+    d23 = 3.45*abs(r) + 0.845*abs(v) - 0.1079;
     d32 = -0.13*abs(r) - 5.0437*abs(v) - 0.1052;
     d33 = 0.75*abs(r) - 0.08*abs(v) + 1.9;
 
@@ -52,6 +51,11 @@ function sys = mdlDerivatives(t,x,u_in)
     dx = u*cos(phi) - v*sin(phi);
     dy = u*sin(phi) + v*cos(phi);
     dphi = r;
+
+    tau_Du = -10 + 4*sin(0.5*t)*cos(0.5*t)-6*cos(t)*cos(0.5*t);
+    tau_Dv =  5*sin(0.1*t);
+    tau_Dr =  8*sin(1.1*t)*cos(0.3*t);
+
 
     % 动力学 (式2-2)
     du_dot = (1/m11) * (m22*v*r + m23*r^2 - d11*u + tau_Du + tau_fu);
@@ -68,5 +72,20 @@ end
 
 function sys = mdlOutputs(t,x,u_in)
     
-    sys = x;  % [x, y, phi, u, v, r]
+    phi = x(3); 
+    u = x(4); 
+    v = x(5); 
+
+    dx1=cos(phi)*u-sin(phi)*v;
+    dy=sin(phi)*u+cos(phi)*v;
+
+    sys(1)=x(1);
+    sys(2)=x(2);
+    sys(3)=x(3);
+    sys(4)=x(4);
+    sys(5)=x(5);
+    sys(6)=x(6);
+    sys(7)=dx1;
+    sys(8)=dy;  
+
 end

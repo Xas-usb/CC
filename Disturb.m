@@ -27,7 +27,7 @@ end
 
 function sys = mdlOutputs(t,x,u)
     
-    tau_Du = -10 + 4*sin(0.5*t)*cos(0.5*t) - 6*cos(t)*cos(0.5*t);
+    tau_Du = -10 + 4*sin(0.5*t)*cos(0.5*t)-6*cos(t)*cos(0.5*t);
     tau_Dv =  5*sin(0.1*t);
     tau_Dr =  8*sin(1.1*t)*cos(0.3*t);
 

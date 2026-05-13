@@ -38,7 +38,7 @@ function sys = mdlDerivatives(t,x,u_in)
 
     % 控制参数
     Tp = 20; gamma = 0.35; mu = 0.01; ell_Lambda = 0.01;
-    zeta_u = 1; zeta_r = 1;  % 无故障
+    zeta_u = 1; zeta_r = 1;  
 
     m11 = 25.8; m22 = 33.8; m23 = 1.0948; m32 = 1.0948; m33 = 2.76;
     xi_u = 1 / m11;
